@@ -6,6 +6,13 @@
     </style>
   </head>
   <body>
-    <h1>Hello World</h1>
+    <h1>Albums</h1>
+    <div id="albums">
+      {% for album in albums %}
+      <div id="{{album.title}}" class="album">
+	<span>Title: <a href="/archive/{{album.artist}}/{{album.title}}/">{{album.title}}</a></span>
+      </div>
+      {% endfor %}
+    </div>
   </body>
 </html>

@@ -4,10 +4,50 @@ from flask import make_response
 from flask import redirect
 from flask import url_for
 from flask import request
+from flask.ext.sqlalchemy import SQLAlchemy
+
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///archive.db'
+database = SQLAlchemy(app)
 
 SUPPORTED_CONTENT_TYPES = []
+
+
+# Models
+
+
+class Album(database.Model):
+
+    '''Album Model Definition'''
+    
+    id = database.Column(database.Integer, primary_key=True)
+    title = database.Column(database.String(512), unique=True)
+    artist = database.Column(database.String(512), unique=False)
+    year = database.Column(database.Integer, unique=False)
+
+    def __init__(self, title, artist, year):
+        self.title = title
+        self.artist = artist
+        self.year = year
+
+    def __repr__(self):
+        return "<Album('%s')>" % self.title
+
+
+database.create_all()
+
+try:
+    database.session.add(Album(title='Pump', artist='Aerosmith', year='1989'))
+    database.session.add(Album(title='Permanent Vacation', artist='Aerosmith',
+                               year='1987'))
+    database.session.add(Album(title='Done With Mirrors', artist='Aerosmith', year='1985'))
+    database.session.commit()
+except Exception, e:
+    print("+="*72)
+    print(e)
+    print("+="*72)
+    database.session.rollback()
 
 
 # Helper Functions
@@ -43,25 +83,28 @@ def determine_content_type(accept_string):
 def root():
 
     '''View Handler for /'''
-    
+
+    albums = Album.query.all()
     content_type = determine_content_type(request.headers['Accept'])
     
     if request.method == 'GET':
-        return render_template('index.html')
+        return render_template('index.html', albums=albums)
     else:
         return make_response(render_template('405.html', method=request.method), 405)
 
 
-@app.route("/archive/<artist>/<album>/", methods=['GET', 'PUT'])
-def album(artist, album):
+@app.route("/archive/<artist>/<title>/", methods=['GET', 'PUT'])
+def album(artist, title):
 
-    '''View Handler for /<artist/<album>/.'''
+    '''View Handler for /<artist/<title>/.'''
 
     content_type = determine_content_type(request.headers['Accept'])
     
     if request.method == 'GET':
-        album = {'artist': "Aerosmith", 'title': 'Done with Mirrors',
-                 'year': '1985'}
+        try:
+            album = Album.query.filter_by(title=title).one()
+        except Exception, e:
+            return make_response(render_template('404.html', title=title), 404)
         return render_template('album.html', album=album)
     elif request.method == 'POST':
         return redirect(url_for('root'))
@@ -70,7 +113,7 @@ def album(artist, album):
     elif request.method == 'DELETE':
         return redirect(url_for('root'))
     else:
-        return make_response(render_template('405.html'), 405)
+        return make_response(render_template('405.html', method=request.method), 405)
     
 
 if __name__ == "__main__":
