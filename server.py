@@ -44,9 +44,9 @@ try:
     database.session.add(Album(title='Done With Mirrors', artist='Aerosmith', year='1985'))
     database.session.commit()
 except Exception, e:
-    print("+="*72)
+    print("+="*36)
     print(e)
-    print("+="*72)
+    print("+="*36)
     database.session.rollback()
 
 
@@ -93,10 +93,10 @@ def root():
         return make_response(render_template('405.html', method=request.method), 405)
 
 
-@app.route("/archive/<artist>/<title>/", methods=['GET', 'PUT'])
-def album(artist, title):
+@app.route("/archive/<artist>/<title>/<year>/", methods=['GET', 'PUT', 'POST'])
+def album(artist, title, year):
 
-    '''View Handler for /<artist/<title>/.'''
+    '''View Handler for /<artist/<title>/<year>/.'''
 
     content_type = determine_content_type(request.headers['Accept'])
     
@@ -107,12 +107,28 @@ def album(artist, title):
             return make_response(render_template('404.html', title=title), 404)
         return render_template('album.html', album=album)
     elif request.method == 'POST':
+        try:
+            album = Album(artist=artis, title=title, year=int(year))
+        except TypeError, e:
+            return make_response(render_template('400.html', title=str(e)), 400)
+        database.session.add(album)
+        database.session.commit()
         return redirect(url_for('root'))
     elif request.method == 'PUT':
+        try:
+            album = Album.query.filter_by(title=title).one()
+        except Exception, e:
+            print(e)
+            return make_response(render_template('404.html', title=title), 404)
+        album.artist = artist
+        album.title = title
+        album.year = int(year)
+        database.session.save(album)
         return redirect(url_for('root'))
     elif request.method == 'DELETE':
         return redirect(url_for('root'))
     else:
+        print('BOOM!')
         return make_response(render_template('405.html', method=request.method), 405)
     
 

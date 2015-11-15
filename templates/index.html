@@ -10,7 +10,7 @@
     <div id="albums">
       {% for album in albums %}
       <div id="{{album.title}}" class="album">
-	<span>Title: <a href="/archive/{{album.artist}}/{{album.title}}/">{{album.title}}</a></span>
+	<span>Title: <a href="/archive/{{album.artist}}/{{album.title}}/{{album.year}}/">{{album.title}}</a></span>
       </div>
       {% endfor %}
     </div>
